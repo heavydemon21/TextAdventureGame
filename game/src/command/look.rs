@@ -2,14 +2,15 @@
 
 use super::Command;
 
-pub struct HelpCommand {
+pub struct LookCommand {
 }
 
 
-impl Command for HelpCommand {
+impl Command for LookCommand {
     fn execute(&self) {
         
     }
     
 }
+
 

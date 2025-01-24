@@ -1,6 +1,4 @@
-use game::Game;
-
-mod game;
+use KerkersEnDraken::*;
 
 fn main() {
     println!("Hello, world!");

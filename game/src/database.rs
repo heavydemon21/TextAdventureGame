@@ -1,10 +1,140 @@
+use sqlite::{Connection, State};
 
-
-
-pub struct Database {
+struct Object {
     name: String,
+    description: String,
+    type_obj: String,
+    extra_parameters: (i64, i64, i64),
+}
 
+struct Location {
+    name: String,
+    description: String,
+}
+
+struct ObjectType {
+    name: String,
+}
+
+struct Enemy {
+    name: String,
+    description: String,
+    minimum_objects: i64,
+    maximum_objects: i64,
+    hp: i64,
+    attack_chance: i64,
+    minimum_damage: i64,
+    maximum_damage: i64,
+}
+
+struct SqlData {
+    objects: Vec<Object>,
+    locations: Vec<Location>,
+    object_types: Vec<ObjectType>,
+    enemies: Vec<Enemy>,
+}
+
+pub(crate) struct Database {
+    connection: Option<Connection>,
+    data: SqlData,
 }
 
 impl Database {
+    pub(crate) fn new(path: &str) -> Self {
+        let mut db = Self {
+            connection: None,
+            data: SqlData {
+                objects: Vec::new(),
+                enemies: Vec::new(),
+                locations: Vec::new(),
+                object_types: Vec::new(),
+            },
+        };
+
+        db.open_connection(path);
+        db.load_data();
+
+        db
+    }
+
+    fn open_connection(&mut self, path: &str) {
+        match sqlite::open(path) {
+            Ok(conn) => {
+                self.connection = Some(conn);
+            }
+            Err(error) => eprintln!("Failed to open databse connection {}", error),
+        };
+    }
+    fn load_data(&mut self) {
+        self.load_object_types();
+        self.load_objects();
+        self.load_locations();
+        self.load_enemies();
+    }
+    fn load_object_types(&mut self) {
+        if let Some(connection) = &self.connection {
+            let query = "SELECT * FROM Objecttypen";
+            let mut statement = connection.prepare(query).unwrap();
+
+            while let Ok(State::Row) = statement.next() {
+                self.data.object_types.push(ObjectType {
+                    name: statement.read::<String, _>("naam").unwrap(),
+                })
+            }
+        }
+    }
+
+    fn load_locations(&mut self) {
+        if let Some(connection) = &self.connection {
+            let query = "SELECT * FROM Locaties";
+            let mut statement = connection.prepare(query).unwrap();
+
+            while let Ok(State::Row) = statement.next() {
+                self.data.locations.push(Location {
+                    name: statement.read::<String, _>("naam").unwrap(),
+                    description: statement.read::<String, _>("beschrijving").unwrap(),
+                })
+            }
+        }
+    }
+
+    fn load_objects(&mut self) {
+        if let Some(connection) = &self.connection {
+            let query = "SELECT * FROM Objecten";
+            let mut statement = connection.prepare(query).unwrap();
+
+            while let Ok(State::Row) = statement.next() {
+                self.data.objects.push(Object {
+                    name: statement.read::<String, _>("naam").unwrap(),
+                    description: statement.read::<String, _>("omschrijving").unwrap(),
+                    type_obj: statement.read::<String, _>("type").unwrap(),
+                    extra_parameters: (
+                        statement.read::<i64, _>("minimumwaarde").unwrap(),
+                        statement.read::<i64, _>("maximumwaarde").unwrap(),
+                        statement.read::<i64, _>("bescherming").unwrap(),
+                    ),
+                })
+            }
+        }
+    }
+
+    fn load_enemies(&mut self) {
+        if let Some(connection) = &self.connection {
+            let query = "SELECT * FROM Vijanden";
+            let mut statement = connection.prepare(query).unwrap();
+
+            while let Ok(State::Row) = statement.next() {
+                self.data.enemies.push(Enemy {
+                    name: statement.read::<String, _>("naam").unwrap(),
+                    description: statement.read::<String, _>("omschrijving").unwrap(),
+                    minimum_objects: statement.read::<i64, _>("minimumobjecten").unwrap(),
+                    maximum_objects: statement.read::<i64, _>("maximumobjecten").unwrap(),
+                    hp: statement.read::<i64, _>("levenspunten").unwrap(),
+                    attack_chance: statement.read::<i64, _>("aanvalskans").unwrap(),
+                    minimum_damage: statement.read::<i64, _>("minimumschade").unwrap(),
+                    maximum_damage: statement.read::<i64, _>("maximumschade").unwrap(),
+                })
+            }
+        }
+    }
 }
