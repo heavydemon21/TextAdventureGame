@@ -1,3 +1,4 @@
+<?xml version='1.0' encoding='utf-8'?>
 <locaties>
     <locatie id="1" noord="2" objectenverborgen="klein levenselixer" naam="Kasteelpoort">
         <beschrijving>Je staat voor de poort van de ruine van een kasteel. De poorten staan open en het valhek is omhoog.</beschrijving>
@@ -11,7 +12,7 @@
     <locatie id="4" noord="7" oost="2" west="6" vijand="Skeletstrijder" naam="Torendeur West">
         <beschrijving>Je staat voor de deur van de Westertoren. Noord is de stal. Je kunt ook oost de binnenplaats oplopen.</beschrijving>
     </locatie>
-    <locatie id="5" west="3" vijand="Oger" objectenzichtbaar="maliënkolder;langzwaard" objectenverborgen="zak met goudstukken" naam="Oostertoren">
+    <locatie id="5" west="3" vijand="Oger" objectenzichtbaar="maliÃ«nkolder;langzwaard" objectenverborgen="zak met goudstukken" naam="Oostertoren">
         <beschrijving>Deze stenen toren staat nog overeind, ook al is de houten trap naar boven weggerot.</beschrijving>
     </locatie>
     <locatie id="6" oost="4" vijand="Hobgoblin" objectenzichtbaar="middelgrote teleportatiedrank" naam="Westertoren">

@@ -4,9 +4,10 @@ use quick_xml::{
     events::{attributes::Attribute, Event},
     Reader,
 };
-use rand::Rng;
+use rand::{seq::SliceRandom, thread_rng, Rng};
 
 use crate::{
+    enemy::Enemy,
     name_generator::{self, NameGenerator},
     objects::ItemFactory,
 };
@@ -33,12 +34,14 @@ pub(crate) struct Locatie {
 
 pub(crate) struct Story {
     locaties: Vec<Locatie>,
+    db: Database,
 }
 
 impl Story {
     pub(crate) fn new(xml_path: &str) -> Self {
+        let db = Database::new("../assets/kerkersendraken.db");
         let xml_bytes = fs::read(xml_path).expect("Failed to read xml file");
-        let xml_content = String::from_utf8_lossy(&xml_bytes);
+        let xml_content = String::from_utf8(xml_bytes).unwrap();
         let mut reader = Reader::from_str(&xml_content);
 
         let mut locaties: Vec<Locatie> = Vec::new();
@@ -73,7 +76,6 @@ impl Story {
                             beschrijving: String::new(),
                         };
 
-                        // Iterate over the attributes of the "locatie" tag
                         for attr in e.attributes() {
                             match attr {
                                 Ok(Attribute { key, value }) => {
@@ -114,16 +116,14 @@ impl Story {
                         }
                     }
                 }
+                Ok(Event::Text(ref e)) => {
+                    if e.len() > 30 {
+                        current_locatie.beschrijving = e.unescape().unwrap().to_string();
+                    }
+                }
                 Ok(Event::End(ref e)) => {
                     if e.name().0 == b"locatie" {
                         locaties.push(current_locatie.clone());
-                    }
-                }
-                Ok(Event::Empty(ref e)) => {
-                    if e.name().0 == b"beschrijving" {
-                        if let Ok(Event::Text(e)) = reader.read_event() {
-                            current_locatie.beschrijving = e.unescape().unwrap().to_string();
-                        }
                     }
                 }
                 Ok(Event::Eof) => break,
@@ -135,67 +135,43 @@ impl Story {
             }
         }
 
-        Self { locaties: locaties }
+        Self { locaties, db }
     }
 
-    pub(crate) fn create_rooms(&self, rooms: &mut Vec<Room>) {
-        let db = Database::new("../assets/kerkersendraken.db");
-        let mut unique_name = NameGenerator::new();
+    fn fill_items(&self, objects: &Option<String>, unique_name: &mut NameGenerator) -> Vec<Item> {
+        let mut items: Vec<Item> = Vec::new();
+        if let Some(visible_str) = objects.as_ref() {
+            let vis_parts: Vec<&str> = visible_str.trim().split(';').collect();
+
+            for item_name in vis_parts {
+                if let Some(obj) = self.db.get_object(item_name) {
+                    let name = unique_name.generate_name(&obj.name);
+                    let extra_parameters = (
+                        obj.extra_parameters.0 as u32,
+                        obj.extra_parameters.1 as u32,
+                        obj.extra_parameters.2 as u32,
+                    );
+                    items.push(ItemFactory::create_item(
+                        &name,
+                        &obj.description,
+                        &obj.type_obj,
+                        extra_parameters,
+                    ));
+                } else {
+                    eprintln!("Object {} not found in database", item_name);
+                }
+            }
+        }
+        items
+    }
+
+    pub(crate) fn create_rooms(&self, unique_name: &mut NameGenerator) -> Vec<Room> {
+        let mut rooms: Vec<Room> = Vec::new();
         for story in &self.locaties {
-            let mut visible_items: Vec<Item> = Vec::new();
-            let mut invisible_items: Vec<Item> = Vec::new();
-
-            if let Some(visible_str) = story.objectenzichtbaar.as_ref() {
-                let vis_parts: Vec<&str> = visible_str.trim().split(';').collect();
-
-                for item_name in vis_parts {
-                    if let Some(obj) = db.get_object(item_name) {
-                        let name = unique_name.generate_name(&obj.name);
-                        let extra_parameters = (
-                            obj.extra_parameters.0 as u32,
-                            obj.extra_parameters.1 as u32,
-                            obj.extra_parameters.2 as u32,
-                        );
-                        visible_items.push(ItemFactory::create_item(
-                            &name,
-                            &obj.description,
-                            &obj.type_obj,
-                            extra_parameters,
-                        ));
-                    } else {
-                        // Handle the case where object is not found in the database
-                        eprintln!("Object {} not found in database", item_name);
-                    }
-                }
-            }
-
-            // Handle invisible items
-            if let Some(invisible_str) = story.objectenverborgen.as_ref() {
-                let invis_parts: Vec<&str> = invisible_str.trim().split(';').collect();
-
-                for item_name in invis_parts {
-                    if let Some(obj) = db.get_object(item_name) {
-                        let name = unique_name.generate_name(&obj.name);
-                        let extra_parameters = (
-                            obj.extra_parameters.0 as u32,
-                            obj.extra_parameters.1 as u32,
-                            obj.extra_parameters.2 as u32,
-                        );
-
-                        invisible_items.push(ItemFactory::create_item(
-                            &name,
-                            &obj.description,
-                            &obj.type_obj,
-                            extra_parameters,
-                        ));
-                    } else {
-                        // Handle the case where object is not found in the database
-                        eprintln!("Object {} not found in database", item_name);
-                    }
-                }
-            }
-
+            let visible_items: Vec<Item> = self.fill_items(&story.objectenzichtbaar, unique_name);
+            let invisible_items: Vec<Item> = self.fill_items(&story.objectenverborgen, unique_name);
             let name = unique_name.generate_name(&story.naam);
+
             rooms.push(Room::new(
                 story.id,
                 &name,
@@ -204,27 +180,74 @@ impl Story {
                 &invisible_items,
             ));
         }
+        rooms
     }
 
-    pub(crate) fn iterate_locations(&self) {
-        for locatie in &self.locaties {
-            println!("Locatie ID: {:?}", locatie.id);
-            println!("Naam: {:?}", locatie.naam.clone());
-            println!("Beschrijving: {}", locatie.beschrijving);
+    pub(crate) fn create_enemies(&self, unique_name: &mut NameGenerator) -> Vec<Enemy> {
+        let mut enemies: Vec<Enemy> = Vec::new();
 
-            if let Some(enemies) = &locatie.vijand {
-                println!("Vijanden: {}", enemies);
+        for story in &self.locaties {
+            if let Some(enemy) = story.vijand.as_ref() {
+                let multiple_enemies: Vec<&str> = enemy.split(";").collect();
+                for single_enemy in multiple_enemies {
+                    if let Some(found_enemy) = self.db.get_enemy(single_enemy) {
+                        let name = unique_name.generate_name(&found_enemy.name);
+                        let hp = found_enemy.hp as u32;
+                        let min_dmg = found_enemy.minimum_damage as u32;
+                        let max_dmg = found_enemy.maximum_damage as u32;
+                        let items = self.generate_random_items(
+                            unique_name,
+                            &(
+                                found_enemy.minimum_objects as u32,
+                                found_enemy.maximum_objects as u32,
+                            ),
+                        );
+                        enemies.push(Enemy::new(
+                            story.id,
+                            &name,
+                            &found_enemy.description,
+                            hp,
+                            min_dmg,
+                            max_dmg,
+                            &items,
+                        ));
+                    } else {
+                        eprintln!("enemy not found: {}", single_enemy);
+                    }
+                }
             }
-
-            if let Some(hidden_objects) = &locatie.objectenverborgen {
-                println!("Verborgen objecten: {}", hidden_objects);
-            }
-
-            if let Some(visible_objects) = &locatie.objectenzichtbaar {
-                println!("Zichtbare objecten: {}", visible_objects);
-            }
-
-            println!("---");
         }
+        enemies
+    }
+
+    pub(crate) fn generate_random_items(
+        &self,
+        unique_name: &mut NameGenerator,
+        range: &(u32, u32),
+    ) -> Vec<Item> {
+        let mut items: Vec<Item> = Vec::new();
+        let mut rng = thread_rng();
+        let max_len = rng.gen_range(range.0..=range.1);
+        let mut idx = 0;
+        let objects = self.db.get_all_objects();
+
+        while idx != max_len {
+            let enemy_obj = objects.choose(&mut rng).unwrap();
+            let name = unique_name.generate_name(&enemy_obj.name);
+            let parameters: (u32, u32, u32) = (
+                enemy_obj.extra_parameters.0 as u32,
+                enemy_obj.extra_parameters.1 as u32,
+                enemy_obj.extra_parameters.2 as u32,
+            );
+            items.push(ItemFactory::create_item(
+                &name,
+                &enemy_obj.description,
+                &enemy_obj.type_obj,
+                parameters,
+            ));
+            idx += 1;
+        }
+
+        items
     }
 }

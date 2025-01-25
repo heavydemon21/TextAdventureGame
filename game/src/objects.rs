@@ -1,12 +1,12 @@
 use rand::Rng;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) struct GameObject {
     name: String,
     description: String,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) enum GameObjectType {
     Coin(u32),
     Weapon(u32, u32),
@@ -14,25 +14,29 @@ pub(crate) enum GameObjectType {
     Consumable(u32),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) struct Item {
     base: GameObject,
     kind: GameObjectType,
 }
 
+#[derive(Debug)]
 pub(crate) struct Coin {
     value: u32,
 }
 
+#[derive(Debug)]
 pub(crate) struct Weapon {
     minimum_damage: u32,
     maximum_damage: u32,
 }
 
+#[derive(Debug)]
 pub(crate) struct Armor {
     defense: u32,
 }
 
+#[derive(Debug)]
 pub(crate) struct Consumable {
     heal_amount: u32,
 }
@@ -56,15 +60,15 @@ impl ItemFactory {
         match obj_type {
             "teleportatiedrank" => Item {
                 base,
-                kind: GameObjectType::Consumable(rng.gen_range(value.0..value.1)),
+                kind: GameObjectType::Consumable(rng.gen_range(value.0..=value.1)),
             },
             "ervaringsdrink" => Item {
                 base,
-                kind: GameObjectType::Consumable(rng.gen_range(value.0..value.1)),
+                kind: GameObjectType::Consumable(rng.gen_range(value.0..=value.1)),
             },
             "levenselixer" => Item {
                 base,
-                kind: GameObjectType::Consumable(rng.gen_range(value.0..value.1)),
+                kind: GameObjectType::Consumable(rng.gen_range(value.0..=value.1)),
             },
             "wapenrusting" => Item {
                 base,
@@ -76,7 +80,7 @@ impl ItemFactory {
             },
             "goudstukken" => Item {
                 base,
-                kind: GameObjectType::Coin(rng.gen_range(value.0..value.1)),
+                kind: GameObjectType::Coin(rng.gen_range(value.0..=value.1)),
             },
             _ => Item {
                 base,

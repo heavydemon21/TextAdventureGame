@@ -16,15 +16,15 @@ struct ObjectType {
     name: String,
 }
 
-struct Enemy {
-    name: String,
-    description: String,
-    minimum_objects: i64,
-    maximum_objects: i64,
-    hp: i64,
-    attack_chance: i64,
-    minimum_damage: i64,
-    maximum_damage: i64,
+pub(crate) struct Enemy {
+    pub(crate) name: String,
+    pub(crate) description: String,
+    pub(crate) minimum_objects: i64,
+    pub(crate) maximum_objects: i64,
+    pub(crate) hp: i64,
+    pub(crate) attack_chance: i64,
+    pub(crate) minimum_damage: i64,
+    pub(crate) maximum_damage: i64,
 }
 
 struct SqlData {
@@ -139,11 +139,23 @@ impl Database {
     }
 
     pub(crate) fn get_object(&self, name: &str) -> Option<&Object> {
-        for object  in &self.data.objects {
+        for object in &self.data.objects {
             if object.name == name {
                 return Some(object);
             }
         }
-    None
+        None
+    }
+
+    pub(crate) fn get_enemy(&self, name: &str) -> Option<&Enemy> {
+        for enemy in &self.data.enemies {
+            if enemy.name == name {
+                return Some(enemy);
+            }
+        }
+        None
+    }
+    pub(crate) fn get_all_objects(&self) -> &Vec<Object> {
+        &self.data.objects
     }
 }

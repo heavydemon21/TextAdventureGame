@@ -1,8 +1,8 @@
-type RoomId = u32;
+pub type RoomId = u32;
 
 use crate::objects::Item;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub(crate) enum Direction {
     North,
     South,
@@ -10,12 +10,13 @@ pub(crate) enum Direction {
     West,
     None,
 }
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub(crate) struct Exit {
     direction: Direction,
     destination: RoomId,
 }
 
+#[derive(Debug)]
 pub(crate) struct Room {
     id: RoomId,
     name: String,
@@ -36,7 +37,7 @@ impl Room {
         let empty: [Exit; 4] = [empty_exit, empty_exit, empty_exit, empty_exit];
 
         Self {
-            id: id,
+            id,
             name: name.to_string(),
             description: description.to_string(),
             exits: empty,

@@ -6,6 +6,7 @@ mod world;
 mod story;
 mod name_generator;
 mod player;
+mod enemy;
 mod game;
 
 
