@@ -1,33 +1,28 @@
 use std::io;
 
 use crate::{
-    command, database::{self, Database}, objects, player::{self, Player}, room::{self, Room}
+    command, objects,
+    player::{self, Player},
+    room::{self, Room},
+    world::{self, World},
 };
 
 pub struct Game {
     world: World,
-    db: Database,
-}
-
-pub(crate) struct World {
-    rooms: Vec<Room>,
-    player: Player,
 }
 
 impl Game {
     pub fn new() -> Self {
-        Self {
-            world: World {
-                rooms: Vec::new(),
-                player: Player::new(),
-            },
-            db: Database::new("../assets/kerkersendraken.db")
+        Game {
+            world: World::new(),
         }
     }
 
     pub fn run(&mut self) {
         loop {
+            println!("BEGIN LOOP");
             let input = self.get_player_input();
+            println!("END LOOP");
         }
     }
 

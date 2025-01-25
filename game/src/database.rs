@@ -1,10 +1,10 @@
 use sqlite::{Connection, State};
 
-struct Object {
-    name: String,
-    description: String,
-    type_obj: String,
-    extra_parameters: (i64, i64, i64),
+pub(crate) struct Object {
+    pub(crate) name: String,
+    pub(crate) description: String,
+    pub(crate) type_obj: String,
+    pub(crate) extra_parameters: (i64, i64, i64),
 }
 
 struct Location {
@@ -136,5 +136,14 @@ impl Database {
                 })
             }
         }
+    }
+
+    pub(crate) fn get_object(&self, name: &str) -> Option<&Object> {
+        for object  in &self.data.objects {
+            if object.name == name {
+                return Some(object);
+            }
+        }
+    None
     }
 }
