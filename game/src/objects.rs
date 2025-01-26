@@ -41,6 +41,16 @@ pub(crate) struct Consumable {
     heal_amount: u32,
 }
 
+impl Item {
+    pub(crate) fn name(&self) -> &str {
+        &self.base.name
+    }
+
+    pub(crate) fn kind(&self) -> &GameObjectType {
+        &self.kind
+    }
+}
+
 pub(crate) struct ItemFactory;
 
 impl ItemFactory {

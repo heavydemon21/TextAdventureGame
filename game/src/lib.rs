@@ -1,13 +1,14 @@
-mod database;
 mod command;
-mod objects;
-mod room;
-mod world;
-mod story;
-mod name_generator;
-mod player;
+mod database;
 mod enemy;
 mod game;
+mod name_generator;
+mod objects;
+mod player;
+mod room;
+mod story;
+mod world;
 
+mod console;
 
 pub use game::Game;

@@ -1,7 +1,9 @@
 use std::io;
 
 use crate::{
-    command, objects,
+    command::{self, parse_input_to_command, Command},
+    console::console::read_input,
+    console_output, objects,
     player::{self, Player},
     room::{self, Room},
     world::{self, World},
@@ -9,32 +11,47 @@ use crate::{
 
 pub struct Game {
     world: World,
+    running: bool,
 }
 
 impl Game {
     pub fn new() -> Self {
         Game {
             world: World::new(),
+            running: true,
         }
     }
 
     pub fn run(&mut self) {
-        loop {
-            println!("BEGIN LOOP");
+        while self.running {
             let input = self.get_player_input();
-            println!("END LOOP");
+            let command = parse_input_to_command(input.as_str());
+            command.execute(self);
+
+            self.check_player_hp();
         }
     }
 
-    fn get_player_input(&self) -> Vec<String> {
-        let mut input = String::new();
-        io::stdin()
-            .read_line(&mut input)
-            .ok()
-            .expect("Failed to read line");
-        input
-            .split_whitespace()
-            .map(|input| input.to_string())
-            .collect()
+    fn check_player_hp(&mut self) {
+        if self.world.get_player().hp() <= 0 {
+            self.running = false;
+        }
+    }
+
+    pub(crate) fn quit_game(&mut self) {
+        self.running = false;
+    }
+
+    pub(crate) fn get_current_room(&self) -> &Room {
+        self.world.get_current_room()
+    }
+
+    pub(crate) fn get_world(&mut self) -> &mut World {
+        &mut self.world
+    }
+
+    fn get_player_input(&self) -> String {
+        console_output!("Insert one of the commands\n");
+        read_input()
     }
 }

@@ -1,16 +1,9 @@
-
+use crate::Game;
 
 use super::Command;
 
-pub struct GodmodeCommand {
-}
-
+pub struct GodmodeCommand {}
 
 impl Command for GodmodeCommand {
-    fn execute(&self) {
-        
-    }
-    
+    fn execute(&self, game: &mut Game) {}
 }
-
-

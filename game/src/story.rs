@@ -9,7 +9,7 @@ use rand::{seq::SliceRandom, thread_rng, Rng};
 use crate::{
     enemy::Enemy,
     name_generator::{self, NameGenerator},
-    objects::ItemFactory,
+    objects::{ItemFactory, Weapon},
 };
 
 use crate::{
@@ -165,12 +165,30 @@ impl Story {
         items
     }
 
+    pub(crate) fn parse_to_exits(locatie: &Locatie) -> Vec<(u32, String)> {
+        let mut exits = Vec::new();
+        if let Some(north_id) = locatie.noord {
+            exits.push((north_id, "North".to_string()));
+        }
+        if let Some(east_id) = locatie.oost {
+            exits.push((east_id, "East".to_string()));
+        }
+        if let Some(south_id) = locatie.zuid {
+            exits.push((south_id, "South".to_string()));
+        }
+        if let Some(west_id) = locatie.west {
+            exits.push((west_id, "West".to_string()));
+        }
+        exits
+    }
+
     pub(crate) fn create_rooms(&self, unique_name: &mut NameGenerator) -> Vec<Room> {
         let mut rooms: Vec<Room> = Vec::new();
         for story in &self.locaties {
             let visible_items: Vec<Item> = self.fill_items(&story.objectenzichtbaar, unique_name);
             let invisible_items: Vec<Item> = self.fill_items(&story.objectenverborgen, unique_name);
             let name = unique_name.generate_name(&story.naam);
+            let exits = Self::parse_to_exits(&story);
 
             rooms.push(Room::new(
                 story.id,
@@ -178,6 +196,7 @@ impl Story {
                 &story.beschrijving,
                 &visible_items,
                 &invisible_items,
+                &exits,
             ));
         }
         rooms
@@ -249,5 +268,17 @@ impl Story {
         }
 
         items
+    }
+
+    pub(crate) fn get_player_starting_weapen(&self, unique_name: &mut NameGenerator) -> Item {
+        let obj = self.db.get_object("dolk").unwrap();
+        let name = unique_name.generate_name(&obj.name);
+        let parameters: (u32, u32, u32) = (
+            obj.extra_parameters.0 as u32,
+            obj.extra_parameters.1 as u32,
+            obj.extra_parameters.2 as u32,
+        );
+
+        ItemFactory::create_item(&name, &obj.description, &obj.type_obj, parameters)
     }
 }
