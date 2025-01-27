@@ -1,9 +1,7 @@
-use std::os::unix::thread;
-
 use rand::{thread_rng, Rng};
 
 use crate::console_output;
-use crate::objects::{Armor, GameObjectType, Item, Weapon};
+use crate::objects::{GameObjectType, Item};
 
 use crate::console::console;
 
@@ -16,6 +14,7 @@ pub(crate) struct Player {
     weapon: Option<Item>,
     armor: Option<Item>,
     backpack: Vec<Item>,
+    godmode: bool,
 }
 
 impl std::fmt::Display for Player {
@@ -69,65 +68,80 @@ impl Player {
             weapon: Some(start_weapon.clone()),
             armor: None,
             backpack: Vec::new(),
+            godmode: false,
         }
+    }
+
+    pub(crate) fn toggle_godmode(&mut self) {
+        self.godmode = !self.godmode;
     }
 
     pub(crate) fn show(&self) {
         console_output!("{self}");
     }
 
-    pub(crate) fn hit(&self) -> u32 {
-        let mut rng = thread_rng();
-
-        let real_attack_chance = self.attack_chance as f64 / 100.0;
-        if rng.gen_bool(real_attack_chance) {
-            if let Some(weapon) = &self.weapon {
-                let (min_dmg, max_dmg) = match &weapon.kind() {
-                    GameObjectType::Weapon(min_dmg, max_dmg) => (*min_dmg, *max_dmg),
-                    _ => (0, 0),
-                };
-
-                let damage = rng.gen_range(min_dmg..=max_dmg);
-
-                console_output!("player does total damage {} with weapon {:?}\n", damage, weapon);
-
-                return damage;
-            }
+    fn get_weapon_dmg(&self) -> u32 {
+        if let Some(weapon) = &self.weapon {
+            let damage = weapon.do_action();
+            console_output!("player does total damage {} \n", damage);
+            return damage;
         }
-        console_output!("player misses\n");
+        console_output!("player has no weapon does 0 damage \n");
         0
     }
 
+    pub(crate) fn hit(&self) -> u32 {
+        if self.godmode {
+            self.get_weapon_dmg()
+        } else {
+            let mut rng = thread_rng();
+
+            let real_attack_chance = self.attack_chance as f64 / 100.0;
+            if rng.gen_bool(real_attack_chance) {
+                return self.get_weapon_dmg();
+            }
+            console_output!("player misses\n");
+            0
+        }
+    }
+
     pub(crate) fn take_dmg(&mut self, damage: u32) {
-        if damage != 0 {
-            if let Some(armor) = &self.armor {
-                let defense = match &armor.kind() {
-                    GameObjectType::Armor(defense) => *defense,
-                    _ => 0,
-                };
+        if self.godmode {
+            console_output!("Player is in godmode. it cannot take damage in this state\n");
+        } else {
+            if damage != 0 {
+                if let Some(armor) = &self.armor {
+                    let defense = armor.do_action();
+                    let actual_damage = if damage > defense {
+                        damage - defense
+                    } else {
+                        0
+                    };
 
-                let actual_damage = if damage > defense {
-                    damage - defense
+                    console_output!(
+                        "You took {} damage after armor mitigation. Your current HP: {}\n",
+                        actual_damage,
+                        self.hp
+                    );
+
+                    self.hp = self.hp.saturating_sub(actual_damage);
                 } else {
-                    0
-                };
-
-                console_output!(
-                    "You took {} damage after armor mitigation. Your current HP: {}\n",
-                    actual_damage,
-                    self.hp
-                );
-
-                self.hp = self.hp.saturating_sub(actual_damage);
-            } else {
-                self.hp = self.hp.saturating_sub(damage);
-                console_output!("You took {} damage. Your current HP: {}\n", damage, self.hp);
+                    self.hp = self.hp.saturating_sub(damage);
+                    console_output!("You took {} damage. Your current HP: {}\n", damage, self.hp);
+                }
             }
         }
     }
 
     pub(crate) fn fill_backpack(&mut self, item: Item) {
-        self.backpack.push(item);
+        match &item.kind() {
+            GameObjectType::Coin(_coin) => {
+                let amount = item.do_action();
+                self.gold += amount;
+                console_output!("Coin pickup {} player has now {} \n", amount, self.gold,);
+            }
+            _ => self.backpack.push(item),
+        }
     }
 
     pub(crate) fn remove_item(&mut self, item_name: &str) -> Option<Item> {
@@ -175,27 +189,22 @@ impl Player {
             let item = self.backpack.remove(position);
 
             match item.kind() {
-                GameObjectType::Weapon(min_damage, max_damage) => {
+                GameObjectType::Weapon(_weapon) => {
                     if let Some(current_weapon) = self.weapon.take() {
                         self.backpack.push(current_weapon);
                         console_output!("Switched out weapon.\n");
                     }
-
-                    console_output!(
-                        "Equipped weapon: {} (Damage: {}-{})\n",
-                        item.name(),
-                        min_damage,
-                        max_damage
-                    );
-
+                    console_output!("Equipping new weapon.\n");
+                    item.show();
                     self.weapon = Some(item);
                 }
-                GameObjectType::Armor(defense) => {
+                GameObjectType::Armor(_armor) => {
                     if let Some(current_armor) = self.armor.take() {
                         self.backpack.push(current_armor);
                         console_output!("Switched out armor.\n");
                     }
-                    console_output!("Equipped armor: {} (Defense: {})\n", item.name(), defense);
+                    console_output!("Equipped new armor \n");
+                    item.show();
                     self.armor = Some(item);
                 }
                 _ => {
@@ -217,14 +226,10 @@ impl Player {
             let item = self.backpack.remove(position);
 
             match item.kind() {
-                GameObjectType::Consumable(value) => {
-                    self.hp += value;
-                    console_output!(
-                        "Consumed potion: {} (effectiveness: {})\n",
-                        item.name(),
-                        value,
-                    );
-
+                GameObjectType::Consumable(_consumable) => {
+                    self.hp += item.do_action();
+                    console_output!("Potion is consumed:\n");
+                    item.show();
                     console_output!("New health: {} \n", self.hp,);
                 }
                 _ => {

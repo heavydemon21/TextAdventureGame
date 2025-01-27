@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{fmt, mem};
 
 use rand::{thread_rng, Rng};
 
@@ -12,6 +12,7 @@ pub(crate) struct Enemy {
     hp: u32,
     minimum_damage: u32,
     maximum_damage: u32,
+    attack_chance: u32,
     invisible_items: Vec<Item>,
 }
 
@@ -53,6 +54,7 @@ impl Enemy {
         name: &str,
         description: &str,
         hp: u32,
+        attack_chance: u32,
         min_dmg: u32,
         max_dmg: u32,
         items: &[Item],
@@ -62,6 +64,7 @@ impl Enemy {
             name: name.to_string(),
             description: description.to_string(),
             hp,
+            attack_chance,
             minimum_damage: min_dmg,
             maximum_damage: max_dmg,
             invisible_items: items.to_vec(),
@@ -74,7 +77,8 @@ impl Enemy {
         }
 
         let mut rng = thread_rng();
-        if rng.gen_bool(0.5) {
+        let attack_procentage = self.attack_chance as f64 / 100.0;
+        if rng.gen_bool(attack_procentage) {
             let damage = rng.gen_range(self.minimum_damage..=self.maximum_damage);
             console_output!("{} hits the player for {}\n", self.name, damage);
             damage
@@ -120,7 +124,15 @@ impl Enemy {
         &self.name
     }
 
+    pub(crate) fn hp(&self) -> u32 {
+        self.hp
+    }
+
     pub(crate) fn room_id(&self) -> RoomId {
         self.id
+    }
+
+    pub(crate) fn move_items(&mut self) -> Vec<Item> {
+        mem::take(&mut self.invisible_items)
     }
 }

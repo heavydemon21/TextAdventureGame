@@ -86,7 +86,10 @@ pub(crate) fn parse_input_to_command(input: &str) -> Commands {
         }),
         "Look" => Commands::Look(LookCommand {}),
         "Wait" => Commands::Wait(WaitCommand {}),
-        "See" => Commands::See(SeeCommand {}),
+        "Search" => Commands::Search(SearchCommand {}),
+        "See" => Commands::See(SeeCommand {
+            enemy_name: parse_args_to_item_name(&args),
+        }),
         "SeePlayer" => Commands::SeePlayer(SeePlayerCommand {}),
         "Take" => Commands::Take(TakeCommand {
             item: parse_args_to_item_name(&args),
@@ -103,7 +106,7 @@ pub(crate) fn parse_input_to_command(input: &str) -> Commands {
         "Hit" => Commands::Hit(HitCommand {
             name: parse_args_to_item_name(&args),
         }),
-
+        "Godmode" => Commands::Godmode(GodmodeCommand {}),
         _ => Commands::Unknown(UnknownCommand {}),
     }
 }

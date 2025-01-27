@@ -1,5 +1,6 @@
 use sqlite::{Connection, State};
 
+
 pub(crate) struct Object {
     pub(crate) name: String,
     pub(crate) description: String,
@@ -7,11 +8,13 @@ pub(crate) struct Object {
     pub(crate) extra_parameters: (i64, i64, i64),
 }
 
+#[allow(dead_code)]
 struct Location {
     name: String,
     description: String,
 }
 
+#[allow(dead_code)]
 struct ObjectType {
     name: String,
 }

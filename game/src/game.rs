@@ -1,12 +1,5 @@
-use std::io;
-
 use crate::{
-    command::{self, parse_input_to_command, Command},
-    console::console::read_input,
-    console_output, objects,
-    player::{self, Player},
-    room::{self, Room},
-    world::{self, World},
+    command::{parse_input_to_command, Command}, console::console::read_input, console_output, room::Room, world::World
 };
 
 pub struct Game {
@@ -23,6 +16,8 @@ impl Game {
     }
 
     pub fn run(&mut self) {
+        console_output!("Welcome to kerkers en draken. A simple text adventure game made in rust for a school project learning rust \n");
+        console_output!("Everytime the prompt shows '>' insert a command. if player does not know any commands insert Help");
         while self.running {
             let input = self.get_player_input();
             let command = parse_input_to_command(input.as_str());
@@ -51,7 +46,6 @@ impl Game {
     }
 
     fn get_player_input(&self) -> String {
-        console_output!("Insert one of the commands\n");
         read_input()
     }
 }

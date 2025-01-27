@@ -6,17 +6,9 @@ use quick_xml::{
 };
 use rand::{seq::SliceRandom, thread_rng, Rng};
 
-use crate::{
-    enemy::Enemy,
-    name_generator::{self, NameGenerator},
-    objects::{ItemFactory, Weapon},
-};
+use crate::{enemy::Enemy, name_generator::NameGenerator, objects::ItemFactory};
 
-use crate::{
-    database::Database,
-    objects::Item,
-    room::{self, Room},
-};
+use crate::{database::Database, objects::Item, room::Room};
 
 #[derive(Debug, Clone)]
 pub(crate) struct Locatie {
@@ -212,6 +204,7 @@ impl Story {
                     if let Some(found_enemy) = self.db.get_enemy(single_enemy) {
                         let name = unique_name.generate_name(&found_enemy.name);
                         let hp = found_enemy.hp as u32;
+                        let attack_chance = found_enemy.attack_chance as u32;
                         let min_dmg = found_enemy.minimum_damage as u32;
                         let max_dmg = found_enemy.maximum_damage as u32;
                         let items = self.generate_random_items(
@@ -226,6 +219,7 @@ impl Story {
                             &name,
                             &found_enemy.description,
                             hp,
+                            attack_chance,
                             min_dmg,
                             max_dmg,
                             &items,

@@ -14,7 +14,7 @@ pub mod console {
     }
 
     pub fn read_input() -> String {
-        const PROMPT: &str = "> ";
+        const PROMPT: &str = "\n> ";
         output(format_args!("{}", PROMPT));
         let mut input = String::new();
         io::stdin().read_line(&mut input).unwrap();

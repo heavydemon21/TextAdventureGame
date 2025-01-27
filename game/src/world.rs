@@ -76,6 +76,19 @@ impl World {
         }
     }
 
+    pub(crate) fn move_enemy_items_to_current_room(&mut self, name: &str) {
+        for enemy in self.enemies.iter_mut() {
+            if enemy.room_id() == self.current_room && enemy.name() == name {
+                if enemy.hp() == 0 {
+                    let idx = (self.current_room - 1) as usize;
+                    self.rooms[idx].append_items(&mut enemy.move_items());
+                } else {
+                    enemy.show();
+                }
+            }
+        }
+    }
+
     pub(crate) fn enemies_move(&mut self) {
         let mut rng = thread_rng();
 

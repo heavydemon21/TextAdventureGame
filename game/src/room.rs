@@ -18,10 +18,9 @@ pub(crate) struct Exit {
 
 impl Exit {
     pub(crate) fn id(&self) -> RoomId {
-       self.destination 
+        self.destination
     }
 }
-
 
 #[derive(Debug)]
 pub(crate) struct Room {
@@ -61,6 +60,10 @@ impl Room {
             visible_items: vis_items.to_vec(),
             invisible_items: invis_items.to_vec(),
         }
+    }
+
+    pub(crate) fn append_items(&mut self, items: &mut Vec<Item>) {
+        self.visible_items.append(items);
     }
 
     pub(crate) fn show(&self) {
