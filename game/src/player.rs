@@ -3,8 +3,6 @@ use rand::{thread_rng, Rng};
 use crate::console_output;
 use crate::objects::{GameObjectType, Item};
 
-use crate::console::console;
-
 #[derive(Debug)]
 pub(crate) struct Player {
     name: String,
@@ -57,11 +55,9 @@ Backpack:       {}
 }
 
 impl Player {
-    pub(crate) fn new(start_weapon: &Item) -> Self {
-        console_output!("Enter player name\n");
-        let player_name = console::read_input();
+    pub(crate) fn new(name: &str, start_weapon: &Item) -> Self {
         Self {
-            name: player_name.to_string(),
+            name: name.to_string(),
             hp: 10,
             gold: 0,
             attack_chance: 40,
@@ -243,5 +239,77 @@ impl Player {
     }
     pub(crate) fn hp(&self) -> u32 {
         self.hp
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::objects::ItemFactory;
+
+    #[test]
+    fn test_player_creation() {
+        let weapon = ItemFactory::create_item("SWORD", "SWORD", "wapen", (10, 10, 10));
+        let player = Player::new("NAME", &weapon);
+        assert_eq!(player.hp(), 10);
+    }
+
+    #[test]
+    fn test_take_damage() {
+        let weapon = ItemFactory::create_item("SWORD", "SWORD", "wapen", (10, 10, 10));
+        let mut player = Player::new("NAME", &weapon);
+        player.take_dmg(5);
+        assert_eq!(player.hp(), 5);
+    }
+
+    #[test]
+    fn test_godmode_prevents_damage() {
+        let weapon = ItemFactory::create_item("SWORD", "SWORD", "wapen", (10, 10, 10));
+        let mut player = Player::new("NAME", &weapon);
+        player.toggle_godmode();
+        player.take_dmg(100);
+        assert_eq!(player.hp(), 10);
+    }
+
+    #[test]
+    fn test_fill_backpack() {
+        let weapon = ItemFactory::create_item("SWORD", "SWORD", "wapen", (10, 10, 10));
+        let potion = ItemFactory::create_item("HEALTH_POTION", "Potion", "levenselixer", (5, 5, 0));
+        let mut player = Player::new("NAME", &weapon);
+        player.fill_backpack(potion);
+        assert_eq!(player.backpack.len(), 1);
+    }
+
+    #[test]
+    fn test_remove_item() {
+        let weapon = ItemFactory::create_item("SWORD", "SWORD", "wapen", (10, 10, 10));
+        let mut player = Player::new("NAME", &weapon);
+        let armor = ItemFactory::create_item("ARMOR", "Shield", "wapenrusting", (0, 5, 0));
+        player.fill_backpack(armor.clone());
+        let removed_item = player.remove_item("ARMOR");
+        assert!(removed_item.is_some());
+        assert_eq!(player.backpack.len(), 0);
+    }
+
+    #[test]
+    fn test_equip_item() {
+        let weapon = ItemFactory::create_item("SWORD", "SWORD", "wapen", (10, 10, 10));
+        let mut player = Player::new("NAME", &weapon);
+        let new_weapon = ItemFactory::create_item("AXE", "AXE", "wapen", (15, 15, 15));
+        player.fill_backpack(new_weapon.clone());
+        player.equip_item("AXE");
+        assert!(player.weapon.is_some());
+        assert_eq!(player.weapon.unwrap().name(), "AXE");
+    }
+
+    #[test]
+    fn test_consume_potion() {
+        let weapon = ItemFactory::create_item("SWORD", "SWORD", "wapen", (10, 10, 10));
+        let potion = ItemFactory::create_item("HEALTH_POTION", "Potion", "levenselixer", (5, 5, 0));
+        let mut player = Player::new("NAME", &weapon);
+        player.fill_backpack(potion);
+        player.take_dmg(5);
+        player.consume_potion("HEALTH_POTION");
+        assert_eq!(player.hp(), 10);
     }
 }

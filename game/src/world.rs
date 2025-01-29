@@ -3,6 +3,7 @@ use core::panic;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 
+use crate::console;
 use crate::console_output;
 use crate::enemy::Enemy;
 use crate::name_generator::NameGenerator;
@@ -27,10 +28,12 @@ impl World {
         let player_start_weapon =
             story_parser.get_player_starting_weapen(&mut unique_name_generator);
 
+        let player_name = console::console::read_input();
+
         Self {
             rooms: created_rooms,
             enemies: created_enemies,
-            player: Player::new(&player_start_weapon),
+            player: Player::new(player_name.as_str(), &player_start_weapon),
             current_room: curr_room,
         }
     }
